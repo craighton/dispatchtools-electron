@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>DispatchTools — Offline</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1220;
+        --panel: #121c2e;
+        --line: #20304a;
+        --text: #e6edf6;
+        --muted: #8aa0bd;
+        --accent: #3b82f6;
+        --accent-press: #2f6ad9;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background:
+          radial-gradient(1200px 600px at 50% -10%, #16233b 0%, var(--bg) 60%);
+        color: var(--text);
+        font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        display: grid;
+        place-items: center;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .card {
+        width: min(440px, 88vw);
+        background: linear-gradient(180deg, var(--panel), #0e1626);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 40px 36px;
+        text-align: center;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+      .glyph {
+        width: 64px; height: 64px; margin: 0 auto 22px;
+        display: grid; place-items: center;
+        border-radius: 16px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.35);
+      }
+      .glyph svg { width: 32px; height: 32px; stroke: var(--accent); }
+      h1 { font-size: 19px; margin: 0 0 8px; letter-spacing: -0.01em; }
+      p { margin: 0 0 26px; color: var(--muted); }
+      button {
+        appearance: none; border: 0; cursor: pointer;
+        background: var(--accent); color: #fff;
+        font: inherit; font-weight: 600;
+        padding: 11px 22px; border-radius: 10px;
+        transition: background 0.15s ease, transform 0.05s ease;
+      }
+      button:hover { background: var(--accent-press); }
+      button:active { transform: translateY(1px); }
+      .status { margin-top: 18px; font-size: 13px; color: var(--muted); min-height: 18px; }
+      .status.online { color: #4ade80; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 1l22 22" />
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9" />
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+          <line x1="12" y1="20" x2="12.01" y2="20" />
+        </svg>
+      </div>
+      <h1>You're offline</h1>
+      <p>DispatchTools can't reach dispatchtools.com right now. Check your connection and try again.</p>
+      <button id="retry" type="button">Retry connection</button>
+      <div class="status" id="status"></div>
+    </main>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      const retryEl = document.getElementById('retry');
+
+      function reload() {
+        if (window.dispatchtools && window.dispatchtools.reloadApp) {
+          statusEl.textContent = 'Reconnecting…';
+          window.dispatchtools.reloadApp();
+        }
+      }
+
+      retryEl.addEventListener('click', reload);
+
+      // Auto-retry the moment the OS reports we're back online.
+      window.addEventListener('online', () => {
+        statusEl.textContent = 'Back online — reconnecting…';
+        statusEl.classList.add('online');
+        setTimeout(reload, 400);
+      });
+
+      if (navigator.onLine) {
+        statusEl.textContent = 'Connection detected. Click retry.';
+      }
+    </script>
+  </body>
+</html>

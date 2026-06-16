@@ -1,0 +1,81 @@
+const { FusesPlugin } = require('@electron-forge/plugin-fuses');
+const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+
+module.exports = {
+  packagerConfig: {
+    asar: true,
+    name: 'DispatchTools',
+    // Provide real icons before shipping:
+    //   assets/icon.icns (macOS), assets/icon.ico (Windows), assets/icon.png (Linux)
+    // then uncomment the next line (no extension — packager picks the right one).
+    // icon: 'assets/icon',
+    appBundleId: 'com.dispatchtools.desktop',
+    // Registers the dispatchtools:// deep-link scheme in the macOS Info.plist.
+    protocols: [
+      {
+        name: 'DispatchTools',
+        schemes: ['dispatchtools'],
+      },
+    ],
+  },
+  rebuildConfig: {},
+  makers: [
+    // Windows installer
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        name: 'DispatchTools',
+      },
+    },
+    // macOS — ZIP is required for Squirrel.Mac auto-update; DMG is the human installer.
+    {
+      name: '@electron-forge/maker-zip',
+      platforms: ['darwin'],
+    },
+    {
+      name: '@electron-forge/maker-dmg',
+      config: {},
+      platforms: ['darwin'],
+    },
+    // Linux
+    {
+      name: '@electron-forge/maker-deb',
+      config: {
+        options: {
+          mimeType: ['x-scheme-handler/dispatchtools'],
+        },
+      },
+    },
+    {
+      name: '@electron-forge/maker-rpm',
+      config: {},
+    },
+  ],
+  // To enable `npm run publish` + auto-update, uncomment and set your GitHub repo,
+  // then set config.UPDATE_REPO (or env DISPATCHTOOLS_UPDATE_REPO) in src/main/config.js.
+  // publishers: [
+  //   {
+  //     name: '@electron-forge/publisher-github',
+  //     config: {
+  //       repository: { owner: 'OWNER', name: 'dispatchtools-electron' },
+  //       prerelease: false,
+  //     },
+  //   },
+  // ],
+  plugins: [
+    {
+      name: '@electron-forge/plugin-auto-unpack-natives',
+      config: {},
+    },
+    // Hardens the packaged app by flipping Electron fuses.
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    }),
+  ],
+};
