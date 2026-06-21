@@ -5,10 +5,7 @@ module.exports = {
   packagerConfig: {
     asar: true,
     name: 'Dispatch Tools',
-    // Provide real icons before shipping:
-    //   assets/icon.icns (macOS), assets/icon.ico (Windows), assets/icon.png (Linux)
-    // then uncomment the next line (no extension — packager picks the right one).
-    // icon: 'assets/icon',
+    icon: 'assets/icon',
     appBundleId: 'com.dispatchtools.desktop',
     // Registers the dispatchtools:// deep-link scheme in the macOS Info.plist.
     protocols: [
