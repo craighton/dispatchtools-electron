@@ -17,6 +17,14 @@ module.exports = {
   // 'faa.gov'). Add more linked resources here as needed.
   IN_APP_DOMAINS: ['faa.gov'],
 
+  // Primary-site path segments that designate a "compact view" — a pop-out panel
+  // a dispatcher can move to its own monitor. Any dispatchtools.com URL whose
+  // path contains one of these as a segment (e.g. /nas/compact/, /advzy/compact/,
+  // /atis/compact/, /wx/compact/) opens in its OWN window instead of replacing
+  // the current one. Segment match, so new compact sections are covered without
+  // a code change.
+  COMPACT_VIEW_SEGMENTS: ['compact'],
+
   // Custom protocol used for deep links: dispatchtools://flights/123 -> /flights/123
   PROTOCOL: 'dispatchtools',
 

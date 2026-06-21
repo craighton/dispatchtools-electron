@@ -1,14 +1,19 @@
 'use strict';
 
 const path = require('path');
-const { BrowserWindow, shell } = require('electron');
-const { APP_URL, ALLOWED_HOSTS, IN_APP_DOMAINS } = require('./config');
+const { BrowserWindow, WebContentsView, shell } = require('electron');
+const { APP_URL, ALLOWED_HOSTS, IN_APP_DOMAINS, COMPACT_VIEW_SEGMENTS } = require('./config');
 const { createWindowState } = require('./windowState');
 
 const OFFLINE_PAGE = path.join(__dirname, '..', 'renderer', 'offline.html');
+const CHROME_PAGE = path.join(__dirname, '..', 'renderer', 'toolbar.html');
 const PRELOAD = path.join(__dirname, '..', 'preload', 'index.js');
+const CHROME_PRELOAD = path.join(__dirname, '..', 'preload', 'chrome.js');
 
-// Shared, locked-down webPreferences for every window we open.
+// Height of the native toolbar chrome — keep in sync with body height in toolbar.html.
+const TOOLBAR_HEIGHT = 44;
+
+// Shared, locked-down webPreferences for every window/view that loads the site.
 const WEB_PREFERENCES = {
   preload: PRELOAD,
   contextIsolation: true,
@@ -17,7 +22,16 @@ const WEB_PREFERENCES = {
   spellcheck: true,
 };
 
-let mainWindow = null;
+// The toolbar chrome gets its own minimal bridge (no site preload, no spellcheck).
+const CHROME_WEB_PREFERENCES = {
+  preload: CHROME_PRELOAD,
+  contextIsolation: true,
+  nodeIntegration: false,
+  sandbox: true,
+};
+
+let mainWindow = null; // BrowserWindow: container; its own webContents renders the toolbar.
+let siteView = null; // WebContentsView: the live site, inset below the toolbar.
 
 function hostnameOf(targetUrl) {
   try {
@@ -41,17 +55,63 @@ function isInAppDomain(targetUrl) {
   return IN_APP_DOMAINS.some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
-function loadApp(window, urlToLoad = APP_URL) {
-  window.loadURL(urlToLoad).catch(() => showOffline(window));
+// A compact "pop-out" view on the primary site (e.g. /nas/compact/, /wx/compact/).
+// Must be an allowed host AND have a configured segment somewhere in the path, so
+// it opens in its own window rather than taking over the current one.
+function isCompactView(targetUrl) {
+  if (!hostIsAllowed(targetUrl)) return false;
+  let pathname;
+  try {
+    pathname = new URL(targetUrl).pathname.toLowerCase();
+  } catch {
+    return false;
+  }
+  const segments = pathname.split('/').filter(Boolean);
+  return segments.some((segment) => COMPACT_VIEW_SEGMENTS.includes(segment));
 }
 
-function showOffline(window) {
-  window.loadFile(OFFLINE_PAGE).catch(() => {});
+// Load a URL into the main window's site view, falling back to the offline page.
+function loadSite(urlToLoad = APP_URL) {
+  if (!siteView) return;
+  siteView.webContents.loadURL(urlToLoad).catch(() => showOffline());
+}
+
+function showOffline() {
+  if (siteView) siteView.webContents.loadFile(OFFLINE_PAGE).catch(() => {});
+}
+
+// The webContents the menu/IPC should drive for the primary site.
+function getSiteContents() {
+  return siteView ? siteView.webContents : null;
+}
+
+// Keep the site view sized to the content area beneath the toolbar.
+function layoutSiteView() {
+  if (!mainWindow || mainWindow.isDestroyed() || !siteView) return;
+  const { width, height } = mainWindow.getContentBounds();
+  siteView.setBounds({
+    x: 0,
+    y: TOOLBAR_HEIGHT,
+    width,
+    height: Math.max(0, height - TOOLBAR_HEIGHT),
+  });
+}
+
+// Push the site's navigation state to the toolbar so it can enable/disable Back
+// and show the current host.
+function pushNavState() {
+  if (!mainWindow || mainWindow.isDestroyed() || !siteView) return;
+  const wc = siteView.webContents;
+  mainWindow.webContents.send('dispatchtools:nav-state', {
+    canGoBack: wc.navigationHistory.canGoBack(),
+    url: wc.getURL(),
+  });
 }
 
 // Opens a URL in an independent in-app window. Used for IN_APP_DOMAINS links
-// (faa.gov etc.) so they stay inside the app — and as a top-level window so a
-// dispatcher can move it to another monitor instead of it stacking on the main view.
+// (faa.gov etc.) and compact pop-outs so they stay inside the app — and as a
+// top-level window so a dispatcher can move it to another monitor instead of it
+// stacking on the main view. These are plain windows, without the toolbar chrome.
 function openInAppWindow(targetUrl) {
   const child = new BrowserWindow({
     width: 1100,
@@ -62,31 +122,48 @@ function openInAppWindow(targetUrl) {
     show: false,
     webPreferences: WEB_PREFERENCES,
   });
-  child.once('ready-to-show', () => child.show());
-  applyNavigationPolicy(child, { isMain: false });
-  child.loadURL(targetUrl).catch(() => {});
+  // `ready-to-show` is unreliable for remote content (it can fail to fire while
+  // the window is hidden, leaving the pop-out invisible). Reveal on whichever of
+  // ready-to-show / did-finish-load / did-fail-load happens first.
+  const reveal = () => {
+    if (!child.isDestroyed() && !child.isVisible()) child.show();
+  };
+  child.once('ready-to-show', reveal);
+  child.webContents.once('did-finish-load', reveal);
+  child.webContents.once('did-fail-load', (_event, errorCode) => {
+    if (errorCode !== -3) reveal();
+  });
+
+  applyNavigationPolicy(child.webContents, { isMain: false });
+  child.loadURL(targetUrl).catch(reveal);
   return child;
 }
 
-// Centralized link routing, shared by the main window and secondary windows.
-// `isMain` distinguishes the primary site window from the secondary ones.
-function applyNavigationPolicy(window, { isMain }) {
-  const wc = window.webContents;
-
+// Centralized link routing, shared by the main site view and secondary windows.
+// `isMain` distinguishes the primary site from the secondary ones.
+function applyNavigationPolicy(wc, { isMain }) {
   // The offline fallback page is only meaningful for the primary site.
   if (isMain) {
     wc.on('did-fail-load', (event, errorCode, _desc, _url, isMainFrame) => {
-      if (isMainFrame && errorCode !== -3) showOffline(window);
+      if (isMainFrame && errorCode !== -3) showOffline();
     });
   }
 
   // In-place (same-window) navigation.
   wc.on('will-navigate', (event, targetUrl) => {
     if (targetUrl.startsWith('file://')) return; // offline.html
+
+    // Compact pop-outs always get their own window — never take over the main one.
+    if (isMain && isCompactView(targetUrl)) {
+      event.preventDefault();
+      openInAppWindow(targetUrl);
+      return;
+    }
+
     if (hostIsAllowed(targetUrl)) return; // primary site — allow in place
 
     if (isInAppDomain(targetUrl)) {
-      // In the main window, don't navigate away from the app — pop a side window.
+      // In the main view, don't navigate away from the app — pop a side window.
       // In a secondary window, let it navigate in place (browse faa.gov freely).
       if (isMain) {
         event.preventDefault();
@@ -101,8 +178,12 @@ function applyNavigationPolicy(window, { isMain }) {
 
   // window.open / target=_blank.
   wc.setWindowOpenHandler(({ url }) => {
+    if (isCompactView(url)) {
+      openInAppWindow(url); // compact pop-out -> its own window, even from main
+      return { action: 'deny' };
+    }
     if (isMain && hostIsAllowed(url)) {
-      loadApp(window, url); // same-site popup re-uses the main window
+      loadSite(url); // same-site popup re-uses the main site view
       return { action: 'deny' };
     }
     if (hostIsAllowed(url) || isInAppDomain(url)) {
@@ -126,21 +207,41 @@ function createMainWindow() {
     minHeight: 600,
     backgroundColor: '#0b1220',
     show: false,
-    title: 'DispatchTools',
-    webPreferences: WEB_PREFERENCES,
+    title: 'Dispatch Tools',
+    webPreferences: CHROME_WEB_PREFERENCES, // the window itself renders the toolbar
   });
+
+  // Keep the title fixed — don't let the toolbar/site page <title> override it.
+  mainWindow.webContents.on('page-title-updated', (event) => event.preventDefault());
 
   state.track(mainWindow);
   if (state.maximized) mainWindow.maximize();
 
+  // The live site lives in a view inset below the toolbar.
+  siteView = new WebContentsView({ webPreferences: WEB_PREFERENCES });
+  siteView.setBackgroundColor('#0b1220');
+  mainWindow.contentView.addChildView(siteView);
+  layoutSiteView();
+
+  mainWindow.on('resize', layoutSiteView);
+  mainWindow.on('enter-full-screen', layoutSiteView);
+  mainWindow.on('leave-full-screen', layoutSiteView);
+
+  applyNavigationPolicy(siteView.webContents, { isMain: true });
+  siteView.webContents.on('did-navigate', pushNavState);
+  siteView.webContents.on('did-navigate-in-page', pushNavState);
+
+  // Sync the toolbar once it has loaded (initial Back-button / host state).
+  mainWindow.webContents.once('did-finish-load', pushNavState);
   mainWindow.once('ready-to-show', () => mainWindow.show());
-  applyNavigationPolicy(mainWindow, { isMain: true });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    siteView = null;
   });
 
-  loadApp(mainWindow);
+  mainWindow.loadFile(CHROME_PAGE); // toolbar chrome
+  loadSite(); // the live site
   return mainWindow;
 }
 
@@ -159,8 +260,9 @@ function focusMainWindow() {
 module.exports = {
   createMainWindow,
   getMainWindow,
+  getSiteContents,
   focusMainWindow,
-  loadApp,
+  loadSite,
   showOffline,
   openInAppWindow,
 };
