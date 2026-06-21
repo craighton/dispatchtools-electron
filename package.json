@@ -1,6 +1,6 @@
 {
   "name": "dispatchtools-electron",
-  "productName": "DispatchTools",
+  "productName": "Dispatch Tools",
   "version": "0.1.0",
   "description": "Desktop app for dispatchtools.com — a hybrid Electron shell around the live site with native menus, offline fallback, notifications, deep links, and auto-update.",
   "main": "src/main/index.js",

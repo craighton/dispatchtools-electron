@@ -4,7 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
-    name: 'DispatchTools',
+    name: 'Dispatch Tools',
     // Provide real icons before shipping:
     //   assets/icon.icns (macOS), assets/icon.ico (Windows), assets/icon.png (Linux)
     // then uncomment the next line (no extension — packager picks the right one).
@@ -13,7 +13,7 @@ module.exports = {
     // Registers the dispatchtools:// deep-link scheme in the macOS Info.plist.
     protocols: [
       {
-        name: 'DispatchTools',
+        name: 'Dispatch Tools',
         schemes: ['dispatchtools'],
       },
     ],
@@ -24,6 +24,9 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
+        // Squirrel/NuGet package id — must be space-free, so it stays
+        // "DispatchTools". The user-facing app name ("Dispatch Tools") comes
+        // from packagerConfig.name above.
         name: 'DispatchTools',
       },
     },

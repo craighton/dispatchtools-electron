@@ -7,9 +7,15 @@ if (require('electron-squirrel-startup')) {
 }
 
 const path = require('path');
-const { app, ipcMain, Notification } = require('electron');
+const { app, ipcMain, Notification, shell } = require('electron');
 const { PROTOCOL } = require('./config');
-const { createMainWindow, getMainWindow, focusMainWindow, loadApp } = require('./window');
+const {
+  createMainWindow,
+  getMainWindow,
+  getSiteContents,
+  focusMainWindow,
+  loadSite,
+} = require('./window');
 const { buildMenu } = require('./menu');
 const { initAutoUpdates } = require('./updater');
 const { deepLinkToAppUrl, findDeepLink } = require('./deepLinks');
@@ -69,21 +75,29 @@ function registerProtocolClient() {
 function handleDeepLink(deepLink) {
   if (!deepLink) return;
   const target = deepLinkToAppUrl(deepLink);
-  const win = focusMainWindow() || getMainWindow();
-  if (target && win) loadApp(win, target);
+  focusMainWindow();
+  if (target) loadSite(target);
 }
 
 function registerIpc() {
   // Renderer-triggered native notifications (exposed via the preload bridge).
   ipcMain.handle('dispatchtools:notify', (_event, { title, body } = {}) => {
     if (!Notification.isSupported()) return false;
-    new Notification({ title: title || 'DispatchTools', body: body || '' }).show();
+    new Notification({ title: title || 'Dispatch Tools', body: body || '' }).show();
     return true;
   });
 
   // Offline page "Retry" button asks the main window to reload the live site.
-  ipcMain.on('dispatchtools:reload-app', () => {
-    const win = getMainWindow();
-    if (win) loadApp(win);
+  ipcMain.on('dispatchtools:reload-app', () => loadSite());
+
+  // Toolbar chrome actions (src/renderer/toolbar.html via the chrome preload).
+  ipcMain.on('dispatchtools:chrome-back', () => {
+    const wc = getSiteContents();
+    if (wc?.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+  });
+  ipcMain.on('dispatchtools:chrome-home', () => loadSite());
+  ipcMain.on('dispatchtools:chrome-open-external', () => {
+    const url = getSiteContents()?.getURL();
+    if (url && /^https?:/i.test(url)) shell.openExternal(url);
   });
 }

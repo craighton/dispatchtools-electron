@@ -2,13 +2,18 @@
 
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const { APP_URL } = require('./config');
-const { getMainWindow, loadApp } = require('./window');
+const { getMainWindow, getSiteContents, loadSite } = require('./window');
 
 const isMac = process.platform === 'darwin';
 
-// Reload/Back/Forward should act on whatever window has focus (including the
-// secondary in-app windows, e.g. faa.gov), falling back to the main window.
-const focusedWindow = () => BrowserWindow.getFocusedWindow() || getMainWindow();
+// Reload/Back/Forward act on whatever has focus. For the main window that's the
+// site view (the window's own webContents is the toolbar chrome); for secondary
+// in-app windows (e.g. faa.gov) it's that window's webContents.
+const targetContents = () => {
+  const focused = BrowserWindow.getFocusedWindow();
+  if (!focused || focused === getMainWindow()) return getSiteContents();
+  return focused.webContents;
+};
 
 function buildMenu() {
   const template = [
@@ -52,25 +57,22 @@ function buildMenu() {
         {
           label: 'Home',
           accelerator: 'CmdOrCtrl+Shift+H',
-          click: () => {
-            const win = getMainWindow();
-            if (win) loadApp(win, APP_URL);
-          },
+          click: () => loadSite(APP_URL),
         },
         {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
-          click: () => focusedWindow()?.webContents.reload(),
+          click: () => targetContents()?.reload(),
         },
         {
           label: 'Back',
           accelerator: isMac ? 'Cmd+[' : 'Alt+Left',
-          click: () => focusedWindow()?.webContents.navigationHistory.goBack(),
+          click: () => targetContents()?.navigationHistory.goBack(),
         },
         {
           label: 'Forward',
           accelerator: isMac ? 'Cmd+]' : 'Alt+Right',
-          click: () => focusedWindow()?.webContents.navigationHistory.goForward(),
+          click: () => targetContents()?.navigationHistory.goForward(),
         },
         { type: 'separator' },
         { role: 'resetZoom' },
