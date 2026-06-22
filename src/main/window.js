@@ -132,6 +132,10 @@ function openInAppWindow(targetUrl) {
     backgroundColor: '#0b1220',
     show: false,
     icon: WINDOW_ICON,
+    // Hide the File/Edit/View/Window/Help menu bar on Windows/Linux (the toolbar
+    // chrome covers navigation). Menu accelerators still work; Alt reveals the
+    // bar. No effect on macOS, where the menu lives in the system menu bar.
+    autoHideMenuBar: true,
     webPreferences: WEB_PREFERENCES,
   });
   // `ready-to-show` is unreliable for remote content (it can fail to fire while
@@ -229,6 +233,7 @@ function createMainWindow() {
     show: false,
     title: 'Dispatch Tools',
     icon: WINDOW_ICON,
+    autoHideMenuBar: true, // hide the menu bar on Windows/Linux; no effect on macOS
     webPreferences: CHROME_WEB_PREFERENCES, // the window itself renders the toolbar
   });
 
