@@ -31,5 +31,5 @@ module.exports = {
   // GitHub "owner/repo" that publishes releases. When set (here or via
   // DISPATCHTOOLS_UPDATE_REPO), packaged builds auto-update via update.electronjs.org.
   // Leave empty to disable auto-update.
-  UPDATE_REPO: process.env.DISPATCHTOOLS_UPDATE_REPO || '',
+  UPDATE_REPO: process.env.DISPATCHTOOLS_UPDATE_REPO || 'craighton/dispatchtools-electron',
 };

@@ -10,6 +10,11 @@ const CHROME_PAGE = path.join(__dirname, '..', 'renderer', 'toolbar.html');
 const PRELOAD = path.join(__dirname, '..', 'preload', 'index.js');
 const CHROME_PRELOAD = path.join(__dirname, '..', 'preload', 'chrome.js');
 
+// Window icon for Linux and dev-mode windows. macOS uses the bundle icon and
+// Windows uses the exe icon (both from forge's packagerConfig.icon), so this is
+// only consulted by Linux/X11 and `npm start`; harmlessly ignored elsewhere.
+const WINDOW_ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png');
+
 // Height of the native toolbar chrome — keep in sync with body height in toolbar.html.
 const TOOLBAR_HEIGHT = 44;
 
@@ -120,6 +125,7 @@ function openInAppWindow(targetUrl) {
     minHeight: 560,
     backgroundColor: '#0b1220',
     show: false,
+    icon: WINDOW_ICON,
     webPreferences: WEB_PREFERENCES,
   });
   // `ready-to-show` is unreliable for remote content (it can fail to fire while
@@ -208,6 +214,7 @@ function createMainWindow() {
     backgroundColor: '#0b1220',
     show: false,
     title: 'Dispatch Tools',
+    icon: WINDOW_ICON,
     webPreferences: CHROME_WEB_PREFERENCES, // the window itself renders the toolbar
   });
 
