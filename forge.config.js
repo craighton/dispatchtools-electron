@@ -36,14 +36,13 @@ module.exports = {
         setupIcon: 'assets/icon.ico',
       },
     },
-    // ZIP maker:
-    //  - macOS: required for Squirrel.Mac auto-update (DMG is the human installer).
-    //  - Windows: a click-to-run portable build — unzip and launch DispatchTools.exe,
-    //    no setup wizard. (This zip does NOT auto-update; the Squirrel Setup.exe above
-    //    is the auto-updating install path.)
+    // macOS ZIP — required for Squirrel.Mac auto-update (DMG is the human
+    // installer). The Windows portable build is a single self-extracting .exe
+    // produced by electron-builder instead (see electron-builder.yml /
+    // `npm run make:portable`), not a Forge zip.
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin', 'win32'],
+      platforms: ['darwin'],
     },
     {
       name: '@electron-forge/maker-dmg',

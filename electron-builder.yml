@@ -1,0 +1,19 @@
+# electron-builder config — used ONLY to produce the single-file Windows
+# portable .exe. Electron Forge (forge.config.js) still handles every other
+# artifact: the Squirrel installer, the macOS .dmg/.zip, and the Linux
+# .deb/.rpm. Build locally with `npm run make:portable`; in CI it is built on
+# the Windows runner and attached to the GitHub Release that Forge creates.
+#
+# Metadata (name, version, main, author, description, prod dependencies) is read
+# from package.json — only the packaging specifics live here.
+appId: com.dispatchtools.desktop
+directories:
+  # Keep clear of Forge's out/make so the two toolchains don't collide.
+  output: out/portable
+win:
+  target: portable
+  icon: assets/icon.ico
+portable:
+  # A single self-extracting .exe — no installer, extracts to a temp dir and
+  # runs. Versioned filename so each release is distinguishable.
+  artifactName: DispatchTools-Portable-${version}.exe

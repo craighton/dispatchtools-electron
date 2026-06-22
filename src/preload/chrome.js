@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('dispatchtoolsChrome', {
   home: () => ipcRenderer.send('dispatchtools:chrome-home'),
   openInBrowser: () => ipcRenderer.send('dispatchtools:chrome-open-external'),
 
+  // Compact tool buttons: the list (resolved synchronously at toolbar load) and
+  // the action to pop one out into its own window.
+  getCompactTools: () => ipcRenderer.sendSync('dispatchtools:get-compact-tools'),
+  openCompactTool: (id) => ipcRenderer.send('dispatchtools:chrome-open-compact', id),
+
   // Subscribe to site navigation state ({ canGoBack, url }). Returns an
   // unsubscribe function.
   onNavState: (callback) => {

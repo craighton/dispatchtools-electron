@@ -25,6 +25,17 @@ module.exports = {
   // a code change.
   COMPACT_VIEW_SEGMENTS: ['compact'],
 
+  // Compact tools surfaced as toolbar buttons. Each opens its compact pop-out in
+  // its own window (via the same path that COMPACT_VIEW_SEGMENTS recognizes), so
+  // a dispatcher can move it to another monitor. `label` is the button text,
+  // `title` the hover tooltip, `path` the site path (resolved against APP_URL).
+  COMPACT_TOOLS: [
+    { id: 'nas', label: 'NAS Status', title: 'NAS Status', path: '/nas/compact/' },
+    { id: 'wx', label: 'Weather', title: 'Weather Monitor', path: '/wx/compact/' },
+    { id: 'atis', label: 'D-ATIS', title: 'D-ATIS Monitor', path: '/atis/compact/' },
+    { id: 'advzy', label: 'Advisories', title: 'Advisories', path: '/advzy/compact/' },
+  ],
+
   // Custom protocol used for deep links: dispatchtools://flights/123 -> /flights/123
   PROTOCOL: 'dispatchtools',
 

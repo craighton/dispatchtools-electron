@@ -2,7 +2,13 @@
 
 const path = require('path');
 const { BrowserWindow, WebContentsView, shell } = require('electron');
-const { APP_URL, ALLOWED_HOSTS, IN_APP_DOMAINS, COMPACT_VIEW_SEGMENTS } = require('./config');
+const {
+  APP_URL,
+  ALLOWED_HOSTS,
+  IN_APP_DOMAINS,
+  COMPACT_VIEW_SEGMENTS,
+  COMPACT_TOOLS,
+} = require('./config');
 const { createWindowState } = require('./windowState');
 
 const OFFLINE_PAGE = path.join(__dirname, '..', 'renderer', 'offline.html');
@@ -145,6 +151,14 @@ function openInAppWindow(targetUrl) {
   return child;
 }
 
+// Opens one of the configured COMPACT_TOOLS by id in its own pop-out window.
+// Returns the window, or null if the id is unknown.
+function openCompactTool(id) {
+  const tool = COMPACT_TOOLS.find((t) => t.id === id);
+  if (!tool) return null;
+  return openInAppWindow(new URL(tool.path, APP_URL).toString());
+}
+
 // Centralized link routing, shared by the main site view and secondary windows.
 // `isMain` distinguishes the primary site from the secondary ones.
 function applyNavigationPolicy(wc, { isMain }) {
@@ -272,4 +286,5 @@ module.exports = {
   loadSite,
   showOffline,
   openInAppWindow,
+  openCompactTool,
 };

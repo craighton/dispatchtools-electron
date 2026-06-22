@@ -11,6 +11,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "make:portable": "electron-builder --win portable",
     "publish": "electron-forge publish"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/publisher-github": "^7.11.2",
     "@electron/fuses": "^1.8.0",
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
   }
 }

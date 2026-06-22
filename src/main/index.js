@@ -8,13 +8,14 @@ if (require('electron-squirrel-startup')) {
 
 const path = require('path');
 const { app, ipcMain, Notification, shell } = require('electron');
-const { PROTOCOL } = require('./config');
+const { PROTOCOL, COMPACT_TOOLS } = require('./config');
 const {
   createMainWindow,
   getMainWindow,
   getSiteContents,
   focusMainWindow,
   loadSite,
+  openCompactTool,
 } = require('./window');
 const { buildMenu } = require('./menu');
 const { initAutoUpdates } = require('./updater');
@@ -42,10 +43,12 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
+    // Register IPC before the window loads so the toolbar's synchronous
+    // getCompactTools() request always has a handler waiting.
+    registerIpc();
     createMainWindow();
     buildMenu();
     initAutoUpdates();
-    registerIpc();
 
     // A deep link present in the initial argv (cold start on Windows/Linux).
     handleDeepLink(findDeepLink(process.argv));
@@ -99,5 +102,14 @@ function registerIpc() {
   ipcMain.on('dispatchtools:chrome-open-external', () => {
     const url = getSiteContents()?.getURL();
     if (url && /^https?:/i.test(url)) shell.openExternal(url);
+  });
+
+  // Compact tool buttons: hand the toolbar its button list (minus the internal
+  // path) and pop the requested tool into its own window.
+  ipcMain.on('dispatchtools:get-compact-tools', (event) => {
+    event.returnValue = COMPACT_TOOLS.map(({ id, label, title }) => ({ id, label, title }));
+  });
+  ipcMain.on('dispatchtools:chrome-open-compact', (_event, id) => {
+    if (typeof id === 'string') openCompactTool(id);
   });
 }

@@ -49,6 +49,7 @@
       button:active { background: var(--press); }
       button:disabled { opacity: 0.4; cursor: default; background: transparent; }
       button svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .divider { flex: 0 0 auto; width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
       .spacer { flex: 1 1 auto; min-width: 8px; }
       .url {
         flex: 0 1 auto;
@@ -71,6 +72,9 @@
       <span>Home</span>
     </button>
 
+    <span class="divider"></span>
+    <span id="tools" style="display: contents"></span>
+
     <span class="spacer"></span>
     <span class="url" id="url" aria-hidden="true"></span>
 
@@ -92,6 +96,24 @@
       backEl.addEventListener('click', () => api.back && api.back());
       homeEl.addEventListener('click', () => api.home && api.home());
       openEl.addEventListener('click', () => api.openInBrowser && api.openInBrowser());
+
+      // Build a pop-out button per configured compact tool. The list and the
+      // open action both come from the main process via the chrome bridge.
+      const TOOL_ICON =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M3 9h18" /></svg>';
+      const tools = (api.getCompactTools && api.getCompactTools()) || [];
+      const toolsEl = document.getElementById('tools');
+      for (const tool of tools) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.title = `${tool.title} — open in its own window`;
+        const label = document.createElement('span');
+        label.textContent = tool.label;
+        btn.innerHTML = TOOL_ICON;
+        btn.appendChild(label);
+        btn.addEventListener('click', () => api.openCompactTool && api.openCompactTool(tool.id));
+        toolsEl.appendChild(btn);
+      }
 
       function hostFrom(url) {
         try { return new URL(url).host; } catch { return ''; }
