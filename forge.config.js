@@ -5,6 +5,7 @@ module.exports = {
   packagerConfig: {
     asar: true,
     name: 'Dispatch Tools',
+    executableName: 'DispatchTools',
     icon: 'assets/icon',
     appBundleId: 'com.dispatchtools.desktop',
     // Registers the dispatchtools:// deep-link scheme in the macOS Info.plist.
@@ -25,14 +26,24 @@ module.exports = {
         // "DispatchTools". The user-facing app name ("Dispatch Tools") comes
         // from packagerConfig.name above.
         name: 'DispatchTools',
+        // The installed app executable Squirrel launches — must match
+        // packagerConfig.executableName so Squirrel finds it.
+        exe: 'DispatchTools.exe',
+        // Installer filename — keep it space-free too (default would be
+        // "Dispatch Tools Setup.exe").
+        setupExe: 'DispatchTools-Setup.exe',
         // Icon shown in the installer wizard and Add/Remove Programs.
         setupIcon: 'assets/icon.ico',
       },
     },
-    // macOS — ZIP is required for Squirrel.Mac auto-update; DMG is the human installer.
+    // ZIP maker:
+    //  - macOS: required for Squirrel.Mac auto-update (DMG is the human installer).
+    //  - Windows: a click-to-run portable build — unzip and launch DispatchTools.exe,
+    //    no setup wizard. (This zip does NOT auto-update; the Squirrel Setup.exe above
+    //    is the auto-updating install path.)
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      platforms: ['darwin', 'win32'],
     },
     {
       name: '@electron-forge/maker-dmg',
