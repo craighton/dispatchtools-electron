@@ -16,3 +16,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Claude Code project instructions (kept local, not committed)
+CLAUDE.md
