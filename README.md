@@ -15,7 +15,7 @@ It is not a standalone app — the renderer *is* the remote website, loaded into
 
 ## Requirements
 
-- **Node.js 18+** (CI builds on Node 22)
+- **Node.js ≥ 22.12.0** (required by Electron 42; pinned in `.nvmrc`, run `nvm use`)
 - npm
 - Platform build tools are only needed when packaging (see [Building](#building))
 
