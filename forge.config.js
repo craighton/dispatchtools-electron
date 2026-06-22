@@ -25,6 +25,8 @@ module.exports = {
         // "DispatchTools". The user-facing app name ("Dispatch Tools") comes
         // from packagerConfig.name above.
         name: 'DispatchTools',
+        // Icon shown in the installer wizard and Add/Remove Programs.
+        setupIcon: 'assets/icon.ico',
       },
     },
     // macOS — ZIP is required for Squirrel.Mac auto-update; DMG is the human installer.
@@ -34,7 +36,10 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-dmg',
-      config: {},
+      config: {
+        // Volume icon for the mounted DMG installer window.
+        icon: 'assets/icon.icns',
+      },
       platforms: ['darwin'],
     },
     // Linux
@@ -51,17 +56,23 @@ module.exports = {
       config: {},
     },
   ],
-  // To enable `npm run publish` + auto-update, uncomment and set your GitHub repo,
-  // then set config.UPDATE_REPO (or env DISPATCHTOOLS_UPDATE_REPO) in src/main/config.js.
-  // publishers: [
-  //   {
-  //     name: '@electron-forge/publisher-github',
-  //     config: {
-  //       repository: { owner: 'OWNER', name: 'dispatchtools-electron' },
-  //       prerelease: false,
-  //     },
-  //   },
-  // ],
+  // `npm run publish` uploads the built artifacts to a GitHub Release. Installed
+  // apps then auto-update from that release via update.electronjs.org (wired in
+  // src/main/updater.js, gated on config.UPDATE_REPO). Requires a GITHUB_TOKEN
+  // env var with `repo` scope when publishing. The repo must be PUBLIC for the
+  // free update service to serve it.
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: { owner: 'craighton', name: 'dispatchtools-electron' },
+        prerelease: false,
+        // Set draft:false so the release is live (and updatable) immediately on
+        // publish. Flip to true if you'd rather review releases before they ship.
+        draft: false,
+      },
+    },
+  ],
   plugins: [
     {
       name: '@electron-forge/plugin-auto-unpack-natives',

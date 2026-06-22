@@ -1,0 +1,44 @@
+name: Release
+
+# Builds and publishes installers for every platform. Triggered by pushing a
+# version tag (e.g. `git tag v0.1.1 && git push origin v0.1.1`) so the tag, the
+# package.json version, and the published GitHub Release all line up. Also
+# runnable manually from the Actions tab.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  # Lets the built-in GITHUB_TOKEN create the GitHub Release and upload assets,
+  # so no personal access token is needed for same-repo publishing.
+  contents: write
+
+jobs:
+  publish:
+    strategy:
+      # Don't cancel the Windows build just because another platform failed.
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest # produces the Windows .exe (Squirrel) installer
+          - os: macos-latest # produces .dmg + .zip (unsigned — see note below)
+          - os: ubuntu-latest # produces .deb + .rpm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish
+        env:
+          # Consumed by @electron-forge/publisher-github.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run publish
