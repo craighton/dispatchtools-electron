@@ -1,12 +1,15 @@
 {
   "name": "dispatchtools-electron",
   "productName": "Dispatch Tools",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Desktop app for dispatchtools.com — a hybrid Electron shell around the live site with native menus, offline fallback, notifications, deep links, and auto-update.",
   "main": "src/main/index.js",
   "author": "Craighton Miller <craightonmiller@gmail.com>",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
