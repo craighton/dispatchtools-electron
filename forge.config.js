@@ -53,18 +53,25 @@ module.exports = {
       },
       platforms: ['darwin'],
     },
-    // Linux
+    // Linux. `bin` must match packagerConfig.executableName ('DispatchTools'),
+    // otherwise the deb/rpm makers look for a "Dispatch Tools" binary that
+    // doesn't exist and fail with a "re-bundle using executableName" error.
     {
       name: '@electron-forge/maker-deb',
       config: {
         options: {
+          bin: 'DispatchTools',
           mimeType: ['x-scheme-handler/dispatchtools'],
         },
       },
     },
     {
       name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        options: {
+          bin: 'DispatchTools',
+        },
+      },
     },
   ],
   // `npm run publish` uploads the built artifacts to a GitHub Release. Installed
